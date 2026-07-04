@@ -28,8 +28,12 @@ jobs:
           javap -p -cp "$J" net.minecraft.client.Minecraft 2>&1 | grep -iE "toast"
           echo "################ Blocks: CONCRETE (all) ################"
           javap -p -cp "$J" net.minecraft.world.level.block.Blocks 2>&1 | grep -iE "CONCRETE"
-          echo "################ NeoForge IMinecraftExtension toast? ################"
-          javap -p -cp "$J" net.neoforged.neoforge.client.extensions.IMinecraftExtension 2>&1 | grep -iE "toast|Toast"
+          echo "################ Gui: toast accessor ################"
+          javap -p -cp "$J" net.minecraft.client.gui.Gui 2>&1 | grep -iE "toast|Toast"
+          echo "################ ColorCollection: accessor methods ################"
+          javap -p -cp "$J" net.minecraft.world.level.block.ColorCollection 2>&1 | grep -iE "public|get" | head
+          echo "################ Minecraft ALL public fields (find toasts) ################"
+          javap -p -cp "$J" net.minecraft.client.Minecraft 2>&1 | grep -E "ToastManager|Gui gui|public final" | head -20
           echo "################ SystemReport.setDetail signatures ################"
           javap -p -cp "$J" net.minecraft.SystemReport 2>&1 | grep -iE "setDetail" | head
           echo "################ grep index for uniform font class ################"

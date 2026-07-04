@@ -1,14 +1,10 @@
 package vazkii.patchouli.client.handler;
 
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.datafixers.util.Pair;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.SubmitNodeStorage;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -35,12 +31,10 @@ import vazkii.patchouli.client.base.PersistentData.Bookmark;
 import vazkii.patchouli.client.multiblock.GhostBlockGeometry;
 import vazkii.patchouli.common.multiblock.StateMatcher;
 import vazkii.patchouli.common.util.RotationUtil;
-import vazkii.patchouli.mixin.client.AccessorMultiBufferSource;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SequencedMap;
 import java.util.function.Function;
 
 public final class MultiblockVisualizationHandler {
@@ -183,7 +177,11 @@ public final class MultiblockVisualizationHandler {
 		lookingState = null;
 		lookingPos = checkPos;
 
-		SubmitNodeStorage submitNodeStorage = mc.gameRenderer.getFeatureRenderDispatcher().getSubmitNodeStorage();
+		// NOTE(26.2 port): 26.2 has no public accessor to the in-world SubmitNodeStorage from
+		// RenderLevelStageEvent yet (upstream in-world multiblock preview is still WIP). Use a
+		// throwaway storage so block-counting/HUD logic keeps working and this compiles; the
+		// ghost geometry is not drained here (preview rendering degraded, matches upstream state).
+		SubmitNodeStorage submitNodeStorage = new SubmitNodeStorage();
 
 		Pair<BlockPos, Collection<IMultiblock.SimulateResult>> sim = multiblock.simulate(world, getStartPos(), getFacingRotation(), true);
 		for (IMultiblock.SimulateResult r : sim.getSecond()) {
@@ -251,26 +249,9 @@ public final class MultiblockVisualizationHandler {
 		return RotationUtil.rotationFromFacing(entity.getDirection());
 	}
 
-	private MultiBufferSource.BufferSource initBuffers(MultiBufferSource.BufferSource original) {
-		ByteBufferBuilder fallback = ((AccessorMultiBufferSource) original).getFallbackBuffer();
-		SequencedMap<RenderType, ByteBufferBuilder> layerBuffers = ((AccessorMultiBufferSource) original).getFixedBuffers();
-		SequencedMap<RenderType, ByteBufferBuilder> remapped = new Object2ObjectLinkedOpenHashMap<>();
-		for (Map.Entry<RenderType, ByteBufferBuilder> e : layerBuffers.entrySet()) {
-			remapped.put(/*GhostRenderLayer.remap(*/e.getKey()/*)*/, e.getValue());
-		}
-		return new GhostBuffers(fallback, remapped);
-	}
-
-	private static class GhostBuffers extends MultiBufferSource.BufferSource {
-		protected GhostBuffers(ByteBufferBuilder fallback, SequencedMap<RenderType, ByteBufferBuilder> layerBuffers) {
-			super(fallback, layerBuffers);
-		}
-
-		@Override
-		public VertexConsumer getBuffer(RenderType type) {
-			return super.getBuffer(/*GhostRenderLayer.remap(*/type/*)*/);
-		}
-	}
+	// NOTE(26.2 port): MultiBufferSource.BufferSource was removed in 26.2 (rendering
+	// moved to SubmitNodeCollector). The old GhostBuffers/initBuffers layer-remap hack
+	// (dead code, never called) has been removed accordingly.
 
 	/*private static class GhostRenderLayer extends RenderType {
 		private static final Map<RenderType, RenderType> remappedTypes = new IdentityHashMap<>();

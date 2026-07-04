@@ -19,21 +19,32 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Materialize Minecraft artifacts
         run: ./gradlew :NeoForge:createMinecraftArtifacts --no-daemon --stacktrace
-      - name: Probe rendering classes
+      - name: Probe APIs
         run: |
           set +e
           J=$(find /home/runner/work -name 'minecraft-patched-*.jar' | grep -v sources | head -1)
           echo "PATCHED=$J"
-          unzip -l "$J" 2>/dev/null | grep -oE '[a-zA-Z0-9/_$]+\.class' > /tmp/idx.txt
-          echo "=== classes containing 'BufferSource' ==="
-          grep -iE 'BufferSource' /tmp/idx.txt | grep -iE 'net/minecraft|com/mojang' | sort -u | head
-          echo "=== classes containing 'MultiBuffer' or 'VertexConsumerProvider' ==="
-          grep -iE 'MultiBuffer|VertexConsumerProvider' /tmp/idx.txt | grep -iE 'net/minecraft|com/mojang' | sort -u | head
-          echo "=== decompile PictureInPictureRenderer for renderToTexture signature ==="
+          for FQ in \
+            net.minecraft.client.gui.render.pip.PictureInPictureRenderer \
+            net.minecraft.client.renderer.feature.FeatureRenderDispatcher \
+            net.minecraft.client.renderer.SubmitNodeCollector \
+            net.minecraft.client.renderer.SubmitNodeStorage \
+            net.minecraft.client.renderer.GameRenderer \
+            net.minecraft.client.Minecraft \
+            net.minecraft.CrashReportCategory ; do
+            echo "################ javap $FQ ################"
+            javap -p -cp "$J" "$FQ" 2>&1 | grep -iE "public|protected|renderToTexture|renderAllFeatures|FeatureRenderDispatcher|SubmitNode|getToast|Toast|UNIFORM|setDetail|Lighting|endBatch|bufferSource" | head -30
+          done
+          echo "################ Minecraft UNIFORM font const ################"
+          javap -p -cp "$J" net.minecraft.client.Minecraft 2>&1 | grep -iE "UNIFORM|Font|Identifier .*FONT" | head
+      - name: Decompile PictureInPictureRenderer + a sample PiP subclass
+        run: |
+          set +e
+          J=$(find /home/runner/work -name 'minecraft-patched-*.jar' | grep -v sources | head -1)
           VF=$(find /home/runner/.gradle -iname 'vineflower*.jar' 2>/dev/null | grep -viE 'plugin' | head -1)
-          echo "VF=$VF"
-          PIP=$(grep -iE 'PictureInPictureRenderer\.class$' /tmp/idx.txt | head -1)
-          echo "PIP class path: $PIP"
-          javap -p -cp "$J" "$(echo $PIP | sed 's#/#.#g; s#\.class$##')" 2>&1 | grep -iE "renderToTexture|render|SubmitNode|BufferSource" | head
-          echo "=== javap SubmitNodeCollector ==="
-          javap -p -cp "$J" net.minecraft.client.renderer.SubmitNodeCollector 2>&1 | head -30
+          mkdir -p /tmp/in /tmp/out
+          unzip -o "$J" 'net/minecraft/client/gui/render/pip/*.class' 'net/minecraft/client/renderer/feature/FeatureRenderDispatcher*.class' -d /tmp/in >/dev/null 2>&1
+          java -jar "$VF" -dgs=1 /tmp/in /tmp/out >/tmp/vf.log 2>&1
+          echo "=== a concrete PiP renderer subclass (renderToTexture body) ==="
+          SUB=$(find /tmp/out -name '*Renderer.java' -path '*pip*' | grep -viE 'PictureInPicture\.java' | head -1)
+          echo "SUB=$SUB"; sed -n '1,80p' "$SUB" 2>/dev/null

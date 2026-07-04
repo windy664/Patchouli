@@ -33,7 +33,7 @@ public class BookCrashHandler implements Supplier<String> {
 
 	@Override
 	public String get() {
-		Screen screen = Minecraft.getInstance().screen;
+		Screen screen = Minecraft.getInstance().gui.screen();
 		if (!(screen instanceof GuiBook gui)) {
 			return "n/a";
 		}

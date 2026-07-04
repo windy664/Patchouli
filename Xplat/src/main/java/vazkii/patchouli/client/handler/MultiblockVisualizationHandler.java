@@ -201,7 +201,7 @@ public final class MultiblockVisualizationHandler {
 					BlockState renderState = r.getStateMatcher().getDisplayedState(ClientTicker.ticksInGame).rotate(facingRotation);
 					float scale = 1;
 					if (renderState.getBlock() == Blocks.AIR) {
-						renderState = Blocks.RED_CONCRETE.defaultBlockState();
+						renderState = Blocks.REDSTONE_BLOCK.defaultBlockState();
 						scale = 0.3F;
 					}
 					submitNodeStorage.submitCustomGeometry(

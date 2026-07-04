@@ -24,10 +24,12 @@ jobs:
           set +e
           J=$(find /home/runner/work -name 'minecraft-patched-*.jar' | grep -v sources | head -1)
           echo "PATCHED=$J"
-          echo "################ Minecraft: toast getter ################"
-          javap -p -cp "$J" net.minecraft.client.Minecraft 2>&1 | grep -iE "Toast|UNIFORM|Font" | head
-          echo "################ Blocks: RED / CONCRETE ################"
-          javap -p -cp "$J" net.minecraft.world.level.block.Blocks 2>&1 | grep -iE "RED_CONCRETE|CONCRETE|RED_|CRIMSON|_WOOL" | head
+          echo "################ Minecraft: toast (all matches) ################"
+          javap -p -cp "$J" net.minecraft.client.Minecraft 2>&1 | grep -iE "toast"
+          echo "################ Blocks: CONCRETE (all) ################"
+          javap -p -cp "$J" net.minecraft.world.level.block.Blocks 2>&1 | grep -iE "CONCRETE"
+          echo "################ NeoForge IMinecraftExtension toast? ################"
+          javap -p -cp "$J" net.neoforged.neoforge.client.extensions.IMinecraftExtension 2>&1 | grep -iE "toast|Toast"
           echo "################ SystemReport.setDetail signatures ################"
           javap -p -cp "$J" net.minecraft.SystemReport 2>&1 | grep -iE "setDetail" | head
           echo "################ grep index for uniform font class ################"

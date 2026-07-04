@@ -25,7 +25,7 @@ public class BookCrashHandler implements Supplier<String> {
 			return;
 		}
 		try {
-			report.setDetail(LABEL, new BookCrashHandler());
+			report.setDetail(LABEL, new BookCrashHandler()::get);
 		} catch (Exception e) {
 			PatchouliAPI.LOGGER.fatal("Failed to extend crash report system info", e);
 		}

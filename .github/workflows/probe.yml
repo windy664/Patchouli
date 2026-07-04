@@ -24,19 +24,16 @@ jobs:
           set +e
           J=$(find /home/runner/work -name 'minecraft-patched-*.jar' | grep -v sources | head -1)
           echo "PATCHED=$J"
-          for FQ in \
-            net.minecraft.client.gui.render.pip.PictureInPictureRenderer \
-            net.minecraft.client.renderer.feature.FeatureRenderDispatcher \
-            net.minecraft.client.renderer.SubmitNodeCollector \
-            net.minecraft.client.renderer.SubmitNodeStorage \
-            net.minecraft.client.renderer.GameRenderer \
-            net.minecraft.client.Minecraft \
-            net.minecraft.CrashReportCategory ; do
-            echo "################ javap $FQ ################"
-            javap -p -cp "$J" "$FQ" 2>&1 | grep -iE "public|protected|renderToTexture|renderAllFeatures|FeatureRenderDispatcher|SubmitNode|getToast|Toast|UNIFORM|setDetail|Lighting|endBatch|bufferSource" | head -30
-          done
-          echo "################ Minecraft UNIFORM font const ################"
-          javap -p -cp "$J" net.minecraft.client.Minecraft 2>&1 | grep -iE "UNIFORM|Font|Identifier .*FONT" | head
+          echo "################ Minecraft: toast getter ################"
+          javap -p -cp "$J" net.minecraft.client.Minecraft 2>&1 | grep -iE "Toast|UNIFORM|Font" | head
+          echo "################ Blocks: RED / CONCRETE ################"
+          javap -p -cp "$J" net.minecraft.world.level.block.Blocks 2>&1 | grep -iE "RED_CONCRETE|CONCRETE|RED_|CRIMSON|_WOOL" | head
+          echo "################ SystemReport.setDetail signatures ################"
+          javap -p -cp "$J" net.minecraft.SystemReport 2>&1 | grep -iE "setDetail" | head
+          echo "################ grep index for uniform font class ################"
+          unzip -l "$J" 2>/dev/null | grep -oE '[a-zA-Z0-9/_$]+\.class' | grep -iE 'FontManager|DefaultFonts|FontOption|GuiSpriteManager' | head
+          echo "################ ToastManager / Toasts class location ################"
+          unzip -l "$J" 2>/dev/null | grep -oE '[a-zA-Z0-9/_$]+\.class' | grep -iE 'ToastManager|/Toasts\.class' | head
       - name: Decompile PictureInPictureRenderer + a sample PiP subclass
         run: |
           set +e

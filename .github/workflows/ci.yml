@@ -19,6 +19,9 @@ jobs:
       - name: Compile Xplat + NeoForge
         run: ./gradlew :Xplat:compileJava :NeoForge:compileJava --no-daemon --stacktrace 2>&1 | tee build.log
         continue-on-error: true
+      - name: Build NeoForge jar
+        if: success()
+        run: ./gradlew :NeoForge:build -x test --no-daemon --stacktrace 2>&1 | tee -a build.log
       - name: Show errors
         if: always()
         run: |
@@ -35,3 +38,10 @@ jobs:
           name: build-log
           path: build.log
           retention-days: 7
+      - name: Upload NeoForge jar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patchouli-neoforge-26.2
+          path: NeoForge/build/libs/*.jar
+          if-no-files-found: warn
